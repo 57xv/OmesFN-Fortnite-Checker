@@ -6,11 +6,11 @@ import (
 )
 
 const (
-	ColorGreen  = ""
-	ColorYellow = ""
-	ColorRed    = ""
-	ColorCyan   = ""
-	ColorReset  = ""
+	ColorGreen  = "\033[32m"
+	ColorYellow = "\033[33m"
+	ColorRed    = "\033[31m"
+	ColorCyan   = "\033[36m"
+	ColorReset  = "\033[0m"
 )
 
 var printLock sync.Mutex
@@ -21,12 +21,12 @@ func safePrint(color, prefix, message string) {
 	fmt.Printf("%s%s %s%s\n", color, prefix, message, ColorReset)
 }
 
-func LogSuccess(message string) {
-	safePrint(ColorGreen, "[SUCCESS]", message)
+func LogSuccess(msg string) {
+	fmt.Printf("[SUCCESS] %s\n", msg)
 }
 
-func LogWarning(message string) {
-	// safePrint(ColorYellow, "[WARNING]", message)
+func LogWarning(msg string) {
+	fmt.Printf("[WARNING] %s\n", msg)
 }
 
 func LogError(message string) {
