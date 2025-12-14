@@ -1,4 +1,4 @@
-module hydra
+module OmesFn
 
 go 1.25.0
 
