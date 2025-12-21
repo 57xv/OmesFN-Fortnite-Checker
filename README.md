@@ -1,3 +1,7 @@
+### NEW DISCORD SERVER :<br>
+https://discord.gg/ZUmC5HscZB
+
+
 `💎` - OmesFN<br>
 <br>
 # Capture
