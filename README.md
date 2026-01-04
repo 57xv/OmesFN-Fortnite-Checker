@@ -1,9 +1,6 @@
 ### NEW DISCORD SERVER :<br>
-https://discord.gg/ZUmC5HscZB <br>
+https://discord.gg/r9fVzHhjQb <br>
 <br>
-
-Got Scammed by JTX - 1291570002075582559
-<img width="1113" height="702" alt="image" src="https://github.com/user-attachments/assets/76199af1-b349-4352-bfaa-8a363909f0ca" />
 
 
 
