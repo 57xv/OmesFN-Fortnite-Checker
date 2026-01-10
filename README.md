@@ -1,5 +1,4 @@
-### NEW DISCORD SERVER :<br>
-https://discord.gg/r9fVzHhjQb <br>
+https://t.me/omesfnn
 <br>
 
 
