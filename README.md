@@ -1,7 +1,7 @@
 https://t.me/omesfnn
 <br>
 
-
+Star for new update
 
 `💎` - OmesFN<br>
 <br>
