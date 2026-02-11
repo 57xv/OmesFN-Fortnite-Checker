@@ -1,4 +1,4 @@
-https://t.me/omesfnn
+https://frozi.lol/og
 <br>
 
 Star for new update
