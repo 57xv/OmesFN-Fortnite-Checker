@@ -1,4 +1,4 @@
-https://frozi.lol/og
+https://frozi.lol/og <br>
 https://omesfn.vercel.app/
 <br>
 
