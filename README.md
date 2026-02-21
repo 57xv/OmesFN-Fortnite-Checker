@@ -1,4 +1,5 @@
 https://frozi.lol/og
+https://omesfn.vercel.app/
 <br>
 
 Star for new update
