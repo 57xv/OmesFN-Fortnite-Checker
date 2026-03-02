@@ -1,5 +1,6 @@
 https://frozi.lol/og <br>
-https://omesfn.vercel.app/
+https://omesfn.vercel.app/<br>
+https://discord.gg/r3hub
 <br>
 
 Star for new update
