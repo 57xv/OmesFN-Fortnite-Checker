@@ -1,8 +1,3 @@
-https://frozi.lol/og <br>
-https://omesfn.vercel.app/<br>
-https://discord.gg/r3hub
-<br>
-
 Star for new update
 
 `💎` - OmesFN<br>
@@ -28,5 +23,9 @@ Star for new update
 
 
 # Link
-*For now, everything is on*  : https://frozi.lol/og
+*For now, everything is on*  : https://frozi.lol/og<br>
+
+# Discord
+https://discord.gg/DRYsdnazZa
+
 
