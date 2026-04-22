@@ -1,5 +1,4 @@
-Star for new update
-
+# WE are open source, NFA x World are clown saying it got a logger... check source... gng not that hard... 
 `💎` - OmesFN<br>
 <br>
 # Capture
