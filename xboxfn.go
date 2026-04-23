@@ -1207,7 +1207,7 @@ func CheckAccount(acc string) bool {
 
 	req, _ := http.NewRequest("POST", "https://account-public-service-prod.ol.epicgames.com/account/api/oauth/token", strings.NewReader(data.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "basic M2UxM2M1YzU3ZjU5NGE1NzhhYmU1MTZlZWNiNjczZmU6NTMwZTMxNmMzMzdlNDA5ODkzYzU1ZWM0NGYyMmNkNjI=")
+	req.Header.Set("Authorization", "basic Y2ZhYTE0YzRiZjg3NDRlM2E1ZWY5YTVkNmMzNDU1OGQ6YmNiMGNkMzkyZmNkNGU1MGE3NmFkNDM4NGM2MjA1NDM=")
 	req.Header.Set("User-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36")
 
 	for i := 0; i < 3; i++ {
